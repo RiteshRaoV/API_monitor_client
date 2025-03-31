@@ -3,6 +3,9 @@ from .base import *
 # Enable Debug Mode
 DEBUG = True
 
+# Static Files
+STATIC_URL = '/static/'
+STATIC_ROOT = '/app/static/' 
 # Databases Configuration
 DATABASES = {
     'default': {  # SQL Database (PostgreSQL/MySQL/SQLite for Dev)
@@ -29,5 +32,9 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 INSTALLED_APPS += ['debug_toolbar']
 MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
 
-# Internal IPs for Debug Toolbar
-INTERNAL_IPS = ['127.0.0.1']
+import socket
+
+# Docker internal IP fix for Debug Toolbar
+hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
+INTERNAL_IPS = ['127.0.0.1', 'localhost', '0.0.0.0'] + [ip[:-1] + '1' for ip in ips]
+
