@@ -1,0 +1,19 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Common standards for the whole project.
+globs: ["**/*.py"]
+alwaysApply: true
+---
+
+# Code Style and Standards
+
+- Follow PEP8 for Python.
+- Use Black and isort for formatting and imports.
+- All public methods/functions must have docstrings.
+- Use descriptive variable and function names.
+- Avoid commented-out code and print statements in committed code.
+

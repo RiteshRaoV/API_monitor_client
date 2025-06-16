@@ -1,0 +1,18 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: Testing rules for Django apps.
+globs: ["tests/**"]
+alwaysApply: true
+---
+
+# Test Rules
+
+- Write tests using `unittest` or Django’s `TestCase`.
+- Organize tests by app, mimicking app structure.
+- Cover models, serializers, and views.
+- Use `factory_boy` or `Model Mommy` to create test objects.
+

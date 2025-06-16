@@ -1,0 +1,19 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Specific rules for `logs` app (log ingestion and storage).
+globs: ["apps/logs/**"]
+alwaysApply: true
+---
+
+# Log Ingestion Rules
+
+- Accept structured JSON logs from SDKs.
+- Validate fields such as `endpoint`, `method`, `status_code`, `latency`, and `timestamp`.
+- Use DRF serializers with `validate_<field>` for field-level validation.
+- Model logs efficiently with proper indexing (e.g., timestamp, app_name).
+- Use custom logging to debug ingestion errors.
+
