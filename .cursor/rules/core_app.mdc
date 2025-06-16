@@ -1,0 +1,19 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Guidelines for the `core` app (shared logic, middleware, encryption).
+globs: ["apps/core/**"]
+alwaysApply: true
+---
+
+# Core Logic Rules
+
+- Place only shared, reusable logic here.
+- Encryption-related functions must be in `core/encryption.py` and unit-tested.
+- Middleware must not block requests — use async-safe practices.
+- Validators go in `core/validators.py` and must raise `ValidationError` on failure.
+- Avoid app-specific logic in `core/`.
+

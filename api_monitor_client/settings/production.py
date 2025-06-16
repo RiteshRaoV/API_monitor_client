@@ -3,6 +3,12 @@ from .base import *
 # Disable Debug Mode
 DEBUG = False
 
+# Static files configuration for production
+STATIC_URL = '/static/'
+
+# Collect static files into a single directory for production
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
 # Databases for Production
 DATABASES = {
     'default': {  # SQL Database (PostgreSQL/MySQL in Production)

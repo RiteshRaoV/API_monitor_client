@@ -9,8 +9,9 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 
 # Copy requirements and install dependencies
-COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+COPY ../requirements.txt /app/
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir --no-deps -r requirements.txt
 
 # Copy project files
 COPY . /app/

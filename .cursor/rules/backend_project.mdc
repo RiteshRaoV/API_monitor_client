@@ -1,0 +1,48 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Rules for the entire Django backend project structure.
+globs: [
+  "api_monitor_client/**",
+  "apps/**",
+  "config/**",
+  "tests/**",
+  "docs/**",
+  "scripts/**",
+  "manage.py",
+]
+alwaysApply: true
+---
+
+# Django Backend Rules
+
+- Use Django REST Framework for all API implementations.
+- Each app (`logs`, `analytics`, `core`) must follow Django’s app structure (models, serializers, views, urls).
+- Use class-based views with DRF’s `GenericAPIView` or ViewSets unless an exception is justified.
+- Handle environment-specific settings via `settings/base.py`, `local.py`, and `production.py`.
+- Follow clear separation of concerns: logs = ingestion, analytics = insights, core = shared logic.
+- Middleware in `core.middleware` should be lightweight and performant.
+- Use PostgreSQL and MongoDB only where necessary; keep the ORM logic clean.
+- Avoid hardcoding values — use environment variables (`.env`) or settings files.
+- Swagger/OpenAPI specs should be kept in `docs/`.
+- Utility functions go into `core.utils`; keep logic modular and testable.
+- Write unit tests for each app in the corresponding subfolder in `tests/`.
+
+# Logging & Monitoring
+
+- Always log errors or critical events using Django’s logging system.
+- Every log stored must include: endpoint, method, status code, timestamp, latency, client IP, and app name.
+
+# Static & Templates
+
+- Serve static files from `/static/`; ensure `collectstatic` is configured.
+- Keep `/templates/` lean, as this is mostly an API-based backend.
+
+# Docker & Configs
+
+- Docker-related files must stay inside `/docker/` or `/config/`.
+- Gunicorn and Nginx should be configured to support static file serving and production-ready API routing.
+

@@ -1,0 +1,19 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Specific rules for `analytics` app (dashboard metrics and analysis).
+globs: ["apps/analytics/**"]
+alwaysApply: true
+---
+
+# Analytics Rules
+
+- Expose APIs to fetch filtered log data based on time, endpoint, method, status, etc.
+- Use DRF ViewSets and filters (`django-filter`).
+- Support grouping (e.g., by app_name, endpoint) and aggregations (e.g., avg latency).
+- Provide endpoints for graph-ready data (e.g., latency trends, error rate).
+- Optimize queries — avoid full-table scans.
+
