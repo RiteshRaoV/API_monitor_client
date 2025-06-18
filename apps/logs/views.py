@@ -3,18 +3,39 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from apps.logs.mongo_models import LogEntry
 # Create your views here.
 class TestPackage(APIView):
-    def get(self,request):
-        return Response({"message":"success!!"},status=status.HTTP_200_OK)
-    def post(self,request):
-        request_body = request.data.get("log_data")
-        request_body = decrypt_payload(request_body)
-        response_body = {
-            json.dumps(request_body)
-        }
-        print(response_body)
-        return Response(response_body,status=status.HTTP_200_OK)
+    def get(self, request):
+        """
+        Fetch recent logs from MongoDB (limit to 10 for example).
+        """
+        logs = LogEntry.objects.order_by('-timestamp')[:10]
+        response_data = [log.to_mongo().to_dict() for log in logs]
+        for log in response_data:
+            log['_id'] = str(log['_id'])  # Convert ObjectId to str for JSON
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        """
+        Receive log payload → decrypt → save to MongoDB.
+        """
+        try:
+            request_body = request.data.get("log_data")
+            if not request_body:
+                return Response({"error": "Missing log_data"}, status=status.HTTP_400_BAD_REQUEST)
+
+            decrypted_data = decrypt_payload(request_body)
+
+            # Save to MongoDB
+            log_entry = LogEntry(**decrypted_data.get("log_data"))
+            log_entry.save()
+
+            print("Log stored in MongoDB")
+            return Response({"message": "Log saved successfully"}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print("Error storing log:", str(e))
+            return Response({"error": "Failed to save log", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     
     
