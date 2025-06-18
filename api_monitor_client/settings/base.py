@@ -32,9 +32,9 @@ INSTALLED_APPS = [
     'apps.core',
 
     # Third-Party Apps
+    "drf_yasg",
     'rest_framework',
     'corsheaders',
-    'djongo',  # MongoDB support
 ]
 
 MIDDLEWARE = [
@@ -71,7 +71,18 @@ WSGI_APPLICATION = 'api_monitor_client.wsgi.application'
 
 # Databases Placeholder - Will be configured per environment
 DATABASES = {}
-DATABASE_ROUTERS = ['apps.core.database_router.DatabaseRouter']
+from mongoengine import connect
+
+connect(
+    db=os.getenv('MONGO_DB_NAME', 'api_monitor_local'),
+    host=os.getenv('MONGO_HOST', 'localhost'),
+    port=int(os.getenv('MONGO_PORT', 27017)),
+    # username=os.getenv('MONGO_USER', 'root'),
+    # password=os.getenv('MONGO_PASSWORD', 'root'),
+    # authentication_source=os.getenv('MONGO_AUTH_DB', 'admin'),
+    alias='mongo'
+)
+
 
 # Password Validation
 AUTH_PASSWORD_VALIDATORS = [
