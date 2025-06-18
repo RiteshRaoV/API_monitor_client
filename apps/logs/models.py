@@ -1,13 +1,6 @@
 from django.db import models
-
+from apps.core.models import Project
 # Create your models here.
-class Project(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    secret_key = models.CharField(max_length=100, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.name
 
 class Endpoint(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='endpoints')
