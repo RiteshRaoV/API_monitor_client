@@ -8,7 +8,7 @@ import datetime
 
 
 class LogEntry(Document):
-    secret_key = StringField(required=True)
+    access_key = StringField(required=True)
     app_name = StringField(required=True)
     tags = ListField(StringField(), default=[])
     
@@ -38,7 +38,7 @@ class LogEntry(Document):
         'collection': 'LogEntry',
         'db_alias': 'mongo',
         'indexes': [
-            'secret_key',
+            'access_key',
             'app_name',
             'endpoint',
             'timestamp',

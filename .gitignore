@@ -37,3 +37,5 @@ media/
 # Other
 .DS_Store
 Thumbs.db
+
+**/migrations
