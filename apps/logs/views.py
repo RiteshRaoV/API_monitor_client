@@ -1,3 +1,4 @@
+import datetime
 import json
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -70,6 +71,8 @@ class TestPackage(APIView):
             # Save to MongoDB
             log_entry = LogEntry(**decrypted_data.get("log_data"))
             log_entry.save()
+            
+            update_endpoint_summary(decrypted_data.get("log_data"), access_key)
 
             print("Log stored in MongoDB")
             return Response({"message": "Log saved successfully"}, status=status.HTTP_201_CREATED)
@@ -111,4 +114,51 @@ def decrypt_payload(encrypted_payload,encryption_key):
 
     # Convert bytes back to JSON
     return json.loads(data.decode('utf-8'))
+
+
+from apps.core.mongo_models import Endpoint
+
+from mongoengine.errors import DoesNotExist
+
+def update_endpoint_summary(log_data, access_key):
+    try:
+        query = {"access_key": access_key, "path":log_data["endpoint"],"method":log_data["method"]}
+        endpoint = Endpoint.objects(__raw__=query).first()
+        
+        if endpoint is None:
+            raise DoesNotExist
+
+        # Update existing endpoint
+        endpoint.total_requests += 1
+        if log_data["status_code"] >= 400:
+            endpoint.total_failures += 1
+
+        # Recalculate averages
+        endpoint.average_latency = round(
+            (endpoint.average_latency * (endpoint.total_requests - 1) + log_data["latency"]) / endpoint.total_requests, 2
+        )
+        endpoint.average_db_time = round(
+            (endpoint.average_db_time * (endpoint.total_requests - 1) + log_data["db_execution_time"]) / endpoint.total_requests, 2
+        )
+        endpoint.last_status_code = log_data["status_code"]
+        endpoint.updated_at = datetime.datetime.utcnow()
+        endpoint.save()
+
+    except DoesNotExist:
+        # Create new entry
+        endpoint = Endpoint(
+            access_key=access_key,
+            path=log_data["endpoint"],
+            method=log_data["method"],
+            app_name=log_data.get("app_name", ""),
+            last_status_code=log_data["status_code"],
+            average_latency=log_data["latency"],
+            average_db_time=log_data["db_execution_time"],
+            total_requests=1,
+            total_failures=1 if log_data["status_code"] >= 400 else 0,
+            tags={"tags": log_data.get("tags", [])}
+        )
+        endpoint.save()
+    except Exception as e:
+        print("Error updating endpoint summary:", e)
 
