@@ -86,6 +86,9 @@ connect(
     alias='mongo'
 )
 
+AUTH_PROVIDER = os.getenv('AUTH_PROVIDER', 'JWT')
+
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',

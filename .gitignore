@@ -39,3 +39,4 @@ media/
 Thumbs.db
 
 **/migrations
+**/firebase-service-account.json
