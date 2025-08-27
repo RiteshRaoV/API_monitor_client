@@ -24,3 +24,18 @@ class Project(models.Model):
     def __str__(self):
         return self.name
 
+
+class NotificationChannel(models.Model):
+    """Channels through which alerts will be sent."""
+    CHANNEL_TYPES = [
+        ("email", "Email"),
+        ("slack", "Slack"),
+        ("webhook", "Webhook"),
+    ]
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="channels")
+    type = models.CharField(max_length=20, choices=CHANNEL_TYPES)
+    config = models.JSONField(
+        help_text="Channel config (email: {address}, slack: {webhook_url}, etc.)"
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
