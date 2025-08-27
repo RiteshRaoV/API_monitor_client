@@ -24,15 +24,18 @@ class Project(models.Model):
     def __str__(self):
         return self.name
 
-class Endpoint(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='endpoints')
-    path = models.CharField(max_length=255)  # e.g. /get-details/
-    method = models.CharField(max_length=10)  # GET, POST, etc.
-    description = models.TextField(blank=True, null=True)
+
+class NotificationChannel(models.Model):
+    """Channels through which alerts will be sent."""
+    CHANNEL_TYPES = [
+        ("email", "Email"),
+        ("slack", "Slack"),
+        ("webhook", "Webhook"),
+    ]
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="channels")
+    type = models.CharField(max_length=20, choices=CHANNEL_TYPES)
+    config = models.JSONField(
+        help_text="Channel config (email: {address}, slack: {webhook_url}, etc.)"
+    )
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('project', 'path', 'method')
-
-    def __str__(self):
-        return f"{self.method} {self.path}"

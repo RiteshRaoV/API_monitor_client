@@ -1,3 +1,4 @@
+import datetime
 import json
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -19,16 +20,36 @@ class TestPackage(APIView):
                 'status_code', openapi.IN_QUERY, description="Filter by status code",
                 type=openapi.TYPE_INTEGER
             ),
+            openapi.Parameter(
+                'request_method', openapi.IN_QUERY, description="Filter by HTTP request method (GET, POST, etc)",
+                type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'endpoint', openapi.IN_QUERY, description="Filter by endpoint path",
+                type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'time_range', openapi.IN_QUERY, description="Filter by time range (JSON: {start, end} as ISO strings)",
+                type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'sort_by', openapi.IN_QUERY, description="Sort by field (timestamp, status_code, latency)",
+                type=openapi.TYPE_STRING
+            ),
         ]
     )
     def get(self, request):
-        project_name = request.GET.get('project_name').strip()
+        project_name = request.GET.get('project_name', '').strip()
         status_code = request.GET.get('status_code')
+        request_method = request.GET.get('request_method')
+        endpoint = request.GET.get('endpoint')
+        time_range = request.data.get('time_range')
+        sort_stratergy = request.GET.get('sort_by')
 
         if not project_name:
             return Response({"error": "project_name is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        project = Project.objects.filter(name__exact = project_name).last()
+        project = Project.objects.filter(name__exact=project_name).last()
         if not project:
             return Response({"error": "Project not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -38,8 +59,24 @@ class TestPackage(APIView):
                 query["status_code"] = int(status_code)
             except ValueError:
                 return Response({"error": "status_code must be an integer"}, status=status.HTTP_400_BAD_REQUEST)
+        if request_method:
+            query["method"] = request_method
+        if endpoint:
+            query["endpoint"] = endpoint
+        if time_range:
+            # Expecting time_range as dict: {"start": "...", "end": "...">
+            start = time_range.get("start")
+            end = time_range.get("end")
+            if start and end:
+                query["timestamp"] = {"$gte": start, "$lte": end}
 
-        logs = LogEntry.objects(__raw__=query).order_by('-timestamp')[:10]
+        # Sorting
+        sort_field = '-timestamp'  # default
+        if sort_stratergy:
+            if sort_stratergy in ['timestamp', 'status_code', 'latency']:
+                sort_field = f'-{sort_stratergy}'
+
+        logs = LogEntry.objects(__raw__=query).order_by(sort_field)[:10]
         response_data = [log.to_mongo().to_dict() for log in logs]
         for log in response_data:
             log['_id'] = str(log['_id'])
@@ -70,6 +107,8 @@ class TestPackage(APIView):
             # Save to MongoDB
             log_entry = LogEntry(**decrypted_data.get("log_data"))
             log_entry.save()
+            
+            update_endpoint_summary(decrypted_data.get("log_data"), access_key)
 
             print("Log stored in MongoDB")
             return Response({"message": "Log saved successfully"}, status=status.HTTP_201_CREATED)
@@ -111,4 +150,51 @@ def decrypt_payload(encrypted_payload,encryption_key):
 
     # Convert bytes back to JSON
     return json.loads(data.decode('utf-8'))
+
+
+from apps.core.mongo_models import Endpoint
+
+from mongoengine.errors import DoesNotExist
+
+def update_endpoint_summary(log_data, access_key):
+    try:
+        query = {"access_key": access_key, "path":log_data["endpoint"],"method":log_data["method"]}
+        endpoint = Endpoint.objects(__raw__=query).first()
+        
+        if endpoint is None:
+            raise DoesNotExist
+
+        # Update existing endpoint
+        endpoint.total_requests += 1
+        if log_data["status_code"] >= 400:
+            endpoint.total_failures += 1
+
+        # Recalculate averages
+        endpoint.average_latency = round(
+            (endpoint.average_latency * (endpoint.total_requests - 1) + log_data["latency"]) / endpoint.total_requests, 2
+        )
+        endpoint.average_db_time = round(
+            (endpoint.average_db_time * (endpoint.total_requests - 1) + log_data["db_execution_time"]) / endpoint.total_requests, 2
+        )
+        endpoint.last_status_code = log_data["status_code"]
+        endpoint.updated_at = datetime.datetime.utcnow()
+        endpoint.save()
+
+    except DoesNotExist:
+        # Create new entry
+        endpoint = Endpoint(
+            access_key=access_key,
+            path=log_data["endpoint"],
+            method=log_data["method"],
+            app_name=log_data.get("app_name", ""),
+            last_status_code=log_data["status_code"],
+            average_latency=log_data["latency"],
+            average_db_time=log_data["db_execution_time"],
+            total_requests=1,
+            total_failures=1 if log_data["status_code"] >= 400 else 0,
+            tags={"tags": log_data.get("tags", [])}
+        )
+        endpoint.save()
+    except Exception as e:
+        print("Error updating endpoint summary:", e)
 
