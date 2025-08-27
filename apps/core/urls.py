@@ -1,7 +1,7 @@
 # apps/core/urls.py
 
 from django.urls import path
-from apps.core.views import EndpointListView, ProjectListCreateAPIView
+from apps.core.v1.Project_APIs.project_api import EndpointListView, ProjectListCreateAPIView
 
 urlpatterns = [
     path('projects/', ProjectListCreateAPIView.as_view(), name='project-list-create'),

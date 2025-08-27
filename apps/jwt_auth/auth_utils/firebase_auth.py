@@ -7,7 +7,7 @@ from rest_framework import exceptions
 
 # Initialize Firebase app only once
 if not firebase_admin._apps:
-    cred = credentials.Certificate('C:\\Users\\rithe\\Desktop\\api_monitor_client\\apps\\jwt_auth\\auth_utils\\firebase-service-account.json')
+    cred = credentials.Certificate("C:\\Users\\rithe\\Desktop\\Projects\\api_monitor_client\\apps\\jwt_auth\\auth_utils\\firebase-service-account.json")
     firebase_admin.initialize_app(cred)
 
 

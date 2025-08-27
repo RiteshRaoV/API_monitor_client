@@ -20,16 +20,36 @@ class TestPackage(APIView):
                 'status_code', openapi.IN_QUERY, description="Filter by status code",
                 type=openapi.TYPE_INTEGER
             ),
+            openapi.Parameter(
+                'request_method', openapi.IN_QUERY, description="Filter by HTTP request method (GET, POST, etc)",
+                type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'endpoint', openapi.IN_QUERY, description="Filter by endpoint path",
+                type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'time_range', openapi.IN_QUERY, description="Filter by time range (JSON: {start, end} as ISO strings)",
+                type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'sort_by', openapi.IN_QUERY, description="Sort by field (timestamp, status_code, latency)",
+                type=openapi.TYPE_STRING
+            ),
         ]
     )
     def get(self, request):
-        project_name = request.GET.get('project_name').strip()
+        project_name = request.GET.get('project_name', '').strip()
         status_code = request.GET.get('status_code')
+        request_method = request.GET.get('request_method')
+        endpoint = request.GET.get('endpoint')
+        time_range = request.data.get('time_range')
+        sort_stratergy = request.GET.get('sort_by')
 
         if not project_name:
             return Response({"error": "project_name is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        project = Project.objects.filter(name__exact = project_name).last()
+        project = Project.objects.filter(name__exact=project_name).last()
         if not project:
             return Response({"error": "Project not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -39,8 +59,24 @@ class TestPackage(APIView):
                 query["status_code"] = int(status_code)
             except ValueError:
                 return Response({"error": "status_code must be an integer"}, status=status.HTTP_400_BAD_REQUEST)
+        if request_method:
+            query["method"] = request_method
+        if endpoint:
+            query["endpoint"] = endpoint
+        if time_range:
+            # Expecting time_range as dict: {"start": "...", "end": "...">
+            start = time_range.get("start")
+            end = time_range.get("end")
+            if start and end:
+                query["timestamp"] = {"$gte": start, "$lte": end}
 
-        logs = LogEntry.objects(__raw__=query).order_by('-timestamp')[:10]
+        # Sorting
+        sort_field = '-timestamp'  # default
+        if sort_stratergy:
+            if sort_stratergy in ['timestamp', 'status_code', 'latency']:
+                sort_field = f'-{sort_stratergy}'
+
+        logs = LogEntry.objects(__raw__=query).order_by(sort_field)[:10]
         response_data = [log.to_mongo().to_dict() for log in logs]
         for log in response_data:
             log['_id'] = str(log['_id'])
